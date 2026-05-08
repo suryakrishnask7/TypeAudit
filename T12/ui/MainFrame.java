@@ -11,13 +11,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
 /**
- * Main application window container.
- * Manages the overall UI layout by composing TypingPanel (typing test
- * interface) and StatsPanel (statistics display).
- * Handles persistence by loading stats on startup and saving them on
- * application exit.
- * Coordinates data flow: TypingPanel updates statistics which triggers
- * StatsPanel refresh.
+ * Main application window.
  */
 public class MainFrame extends JFrame {
 
@@ -27,36 +21,42 @@ public class MainFrame extends JFrame {
     public MainFrame() {
         super("TypeAudit");
 
-        // Load persisted statistics from previous sessions to maintain historical data
-        // across application restarts
+        // Load saved statistics.
         statsManager = FileManager.loadStatsManager();
 
-        // Build the UI layout with typing panel (top/center) and stats panel (bottom)
+        // Set up the UI.
         initUI();
 
+        // Intercept window closing so stats are saved before the process exits.
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
+                // Save stats before exit.
                 FileManager.saveStatsManager(statsManager);
+                // Log exit.
                 FileManager.logActivity("Application exited.");
+                // Close the app.
                 System.exit(0);
             }
         });
     }
 
     private void initUI() {
+        // Set window size.
         setSize(760, 520);
+        // Center the window.
         setLocationRelativeTo(null);
+        // Do not close automatically.
         setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 
-        // Create stats panel and typing panel with callback: when test completes,
-        // refresh stats display
-        // This creates a responsive feedback loop where test results immediately update
-        // analytics
+        // Create the stats panel.
         statsPanel = new StatsPanel(statsManager);
+        // Create the typing panel with stats refresh callback.
         TypingPanel typingPanel = new TypingPanel(statsManager, statsPanel::refreshData);
 
+        // Place typing panel in center.
         add(typingPanel, BorderLayout.CENTER);
+        // Place stats panel at bottom.
         add(statsPanel, BorderLayout.SOUTH);
     }
 }

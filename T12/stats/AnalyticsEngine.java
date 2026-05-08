@@ -3,13 +3,7 @@ package T12.stats;
 import java.util.List;
 
 /**
- * Computes analytics and trends from typing session history stored in
- * StatsManager.
- * Calculates aggregate metrics: average WPM, average accuracy.
- * Detects performance trends: improving/declining/stable based on recent
- * sessions.
- * Used by StatsPanel to display insights and encourage user improvement through
- * feedback.
+ * Computes analytics from typing history.
  */
 public class AnalyticsEngine {
 
@@ -19,47 +13,47 @@ public class AnalyticsEngine {
         this.manager = manager;
     }
 
-    // Calculate mean WPM across all sessions by summing WPM values and dividing by
-    // session count
-    // Returns 0.0 if no sessions recorded; essential for displaying average
-    // performance metric
+    // Calculate average WPM.
     public double getAverageWpm() {
+        // Avoid dividing by zero when no typing sessions have been saved yet.
         if (manager.getHistory().isEmpty())
             return 0.0;
+        // Add every session's WPM so the total can be averaged.
         double total = 0;
         for (StatsRecord r : manager.getHistory()) {
             total += r.getWpm();
         }
+        // Divide by the number of sessions to get the average speed.
         return total / manager.getHistory().size();
     }
 
-    // Calculate mean accuracy across all sessions by summing accuracy values and
-    // dividing by session count
-    // Returns 0.0 if no sessions recorded; used to display consistency in typing
-    // accuracy
+    // Calculate average accuracy.
     public double getAverageAccuracy() {
+        // Avoid dividing by zero when there is no accuracy history.
         if (manager.getHistory().isEmpty())
             return 0.0;
+        // Add every session's accuracy percentage.
         double total = 0;
         for (StatsRecord r : manager.getHistory()) {
             total += r.getAccuracy();
         }
+        // Divide by the number of sessions to get the average accuracy.
         return total / manager.getHistory().size();
     }
 
-    // Compare WPM in recent sessions (last 5) to detect improvement or decline in
-    // typing speed
-    // Returns status string describing trend direction and magnitude
-    // Requires at least 2 sessions to calculate meaningful trend; returns status
-    // message otherwise
+    // Compute speed trend from the last 5 sessions.
     public String getSpeedTrend() {
+        // Only the most recent sessions are used so the trend reflects current performance.
         List<StatsRecord> recent = manager.getRecentSessions(5);
+        // A trend needs at least two points to compare.
         if (recent.size() < 2)
             return "Not enough data for trend";
 
+        // Compare the oldest and newest values in the recent-session window.
         double first = recent.get(0).getWpm();
         double last = recent.get(recent.size() - 1).getWpm();
 
+        // Report whether the user's speed went up, down, or stayed the same.
         if (last > first) {
             return String.format("Improving (+%.1f WPM)", last - first);
         } else if (last < first) {
@@ -69,14 +63,19 @@ public class AnalyticsEngine {
         }
     }
 
+    // Compute accuracy trend from the last 5 sessions.
     public String getAccuracyTrend() {
+        // Use the same recent window so accuracy trend matches the speed trend period.
         List<StatsRecord> recent = manager.getRecentSessions(5);
+        // A trend needs at least two completed tests.
         if (recent.size() < 2)
             return "Not enough data";
 
+        // Compare the earliest and latest accuracy values in the recent list.
         double first = recent.get(0).getAccuracy();
         double last = recent.get(recent.size() - 1).getAccuracy();
 
+        // Report whether the user's accuracy improved, dropped, or stayed stable.
         if (last > first) {
             return String.format("Improving (+%.1f%%)", last - first);
         } else if (last < first) {

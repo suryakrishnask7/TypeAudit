@@ -4,13 +4,7 @@ import java.io.Serializable;
 import java.util.UUID;
 
 /**
- * Data model representing a single completed typing test session.
- * Captures user input, performance metrics (WPM, accuracy, errors), timing, and
- * generates a unique session ID.
- * Implements Serializable to enable persistence through FileManager
- * serialization.
- * Immutable after construction to maintain data integrity in historical
- * records.
+ * Data model for one typing test session.
  */
 public class StatsRecord implements Serializable {
     private static final long serialVersionUID = 2L; // Updated version
@@ -27,9 +21,9 @@ public class StatsRecord implements Serializable {
 
     public StatsRecord(String typedText, String expectedText, double accuracy, double wpm, long timestamp,
             long duration, int errorCount, int totalKeystrokes) {
-        // Generate unique UUID for this session to enable precise session tracking and
-        // auditing
+        // Give every saved test a unique ID so sessions can be distinguished later.
         this.sessionId = UUID.randomUUID().toString();
+        // Store the raw text, scores, timing, and counts for history and analytics.
         this.typedText = typedText;
         this.expectedText = expectedText;
         this.accuracy = accuracy;

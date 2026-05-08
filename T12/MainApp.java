@@ -15,20 +15,23 @@ import javax.swing.*;
 public class MainApp {
 
     public static void main(String[] args) {
+        // Log startup.
         FileManager.logActivity("Application started.");
 
-        // Initialize GUI on Event Dispatch Thread to ensure thread-safe rendering and
-        // event handling
-        // This prevents race conditions when updating UI components from multiple
-        // threads
+        // Start the GUI on the Swing event thread.
         SwingUtilities.invokeLater(() -> {
+            // Keep look-and-feel setup isolated so a UI theme failure does not stop startup.
             try {
+                // Set the system look and feel.
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
             } catch (Exception e) {
+                // Print if the look and feel fails.
                 System.err.println("Could not set system look and feel: " + e.getMessage());
             }
 
+            // Create the main window.
             MainFrame mainFrame = new MainFrame();
+            // Display the window.
             mainFrame.setVisible(true);
         });
     }

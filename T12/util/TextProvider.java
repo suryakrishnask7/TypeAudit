@@ -1,11 +1,7 @@
 package T12.util;
 
 /**
- * Provides random text passages for typing test content.
- * Maintains a static collection of 5 diverse paragraphs covering pangrams,
- * programming concepts, and literature.
- * Ensures consistent test difficulty and variety across sessions by random
- * selection.
+ * Provides random typing test passages.
  */
 public class TextProvider {
     private static final String[] PARAGRAPHS = {
@@ -17,7 +13,9 @@ public class TextProvider {
     };
 
     public static String getRandomText() {
+        // Pick a random valid index from the paragraph array.
         int index = (int) (Math.random() * PARAGRAPHS.length);
+        // Return the passage at that index for the next typing test.
         return PARAGRAPHS[index];
     }
 }

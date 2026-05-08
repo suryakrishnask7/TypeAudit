@@ -11,15 +11,7 @@ import java.util.Date;
 import java.util.List;
 
 /**
- * UI panel displaying aggregated typing test statistics and analytics.
- * Shows aggregate metrics (total sessions, best WPM, averages, trends) in upper
- * section.
- * Lists recent sessions (last 3) with timestamps, WPM, and accuracy in
- * scrollable list below.
- * Updates dynamically when TypingPanel completes a test via refreshData()
- * callback.
- * Uses AnalyticsEngine to compute trends indicating user improvement or
- * decline.
+ * Panel for aggregated stats and recent session history.
  */
 public class StatsPanel extends JPanel {
     private final StatsManager statsManager;
@@ -33,8 +25,11 @@ public class StatsPanel extends JPanel {
     private final DefaultListModel<String> recentModel;
 
     public StatsPanel(StatsManager statsManager) {
+        // Keep the shared manager so this panel always reads the latest saved stats.
         this.statsManager = statsManager;
+        // Build analytics on top of the same manager history.
         this.analyticsEngine = new AnalyticsEngine(statsManager);
+        // Create the labels and list model that will be filled during refreshData().
         this.lblTotalSessions = new JLabel();
         this.lblBestWpm = new JLabel();
         this.lblAvgWpm = new JLabel();
@@ -43,14 +38,17 @@ public class StatsPanel extends JPanel {
         this.lblLifetime = new JLabel();
         this.recentModel = new DefaultListModel<>();
 
+        // Lay out the summary area beside the recent-sessions list.
         setLayout(new BorderLayout(8, 8));
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         setPreferredSize(new Dimension(0, 150));
+        // Build the Swing components, then fill them with current data.
         initUI();
         refreshData();
     }
 
     private void initUI() {
+        // Create the analytics summary grid shown at the bottom of the app.
         JPanel summary = new JPanel(new GridLayout(2, 3, 8, 4));
         summary.setBorder(BorderFactory.createTitledBorder("Analytics"));
         summary.add(lblTotalSessions);
@@ -60,24 +58,23 @@ public class StatsPanel extends JPanel {
         summary.add(lblTrend);
         summary.add(lblLifetime);
 
+        // Create a small list that displays the latest completed sessions.
         JList<String> recentList = new JList<>(recentModel);
         recentList.setVisibleRowCount(3);
         JScrollPane recentScroll = new JScrollPane(recentList);
         recentScroll.setPreferredSize(new Dimension(230, 0));
         recentScroll.setBorder(BorderFactory.createTitledBorder("Recent"));
 
+        // Place the summary in the main area and recent history on the right.
         add(summary, BorderLayout.CENTER);
         add(recentScroll, BorderLayout.EAST);
     }
 
-    // Refresh all statistics displays by querying StatsManager and AnalyticsEngine
-    // Updates aggregate stats (sessions, best WPM, averages, trend, lifetime chars)
-    // Populates recent sessions list (last 3 sessions) with formatted timestamps
-    // and metrics
-    // Called after each completed typing test to reflect new data
+    // Refresh stats display from current history.
     public void refreshData() {
         // Update aggregate stats by querying current totals and analytics
         lblTotalSessions.setText("Sessions: " + statsManager.getTotalSessions());
+        // Find the best session once so the label can handle missing history cleanly.
         StatsRecord best = statsManager.getBestSession();
         lblBestWpm.setText(String.format("Best WPM: %.2f", best == null ? 0.0 : best.getWpm()));
         lblAvgWpm.setText(String.format("Avg WPM: %.2f", analyticsEngine.getAverageWpm()));
@@ -85,12 +82,13 @@ public class StatsPanel extends JPanel {
         lblTrend.setText("Trend: " + analyticsEngine.getSpeedTrend());
         lblLifetime.setText("Chars Typed: " + statsManager.getTotalCharactersTyped());
 
-        // Populate recent sessions list with last 3 sessions in reverse chronological
-        // order
-        // Each entry shows formatted timestamp, WPM, and accuracy percentage
+        // Populate recent sessions list.
+        // Clear old rows before adding the newest three sessions.
         recentModel.clear();
+        // Use a compact timestamp format so recent rows fit in the panel.
         SimpleDateFormat sdf = new SimpleDateFormat("MM-dd HH:mm");
         List<StatsRecord> recent = statsManager.getRecentSessions(3);
+        // Display newest sessions first by walking backward through the recent list.
         for (int i = recent.size() - 1; i >= 0; i--) {
             StatsRecord record = recent.get(i);
             recentModel.addElement(String.format(

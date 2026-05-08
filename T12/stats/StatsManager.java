@@ -6,12 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Central repository for all typing session statistics.
- * Maintains lifetime aggregates (total keystrokes, words, sessions, characters)
- * using BigInteger for large numbers.
- * Preserves complete history of StatsRecord objects for trend analysis.
- * Enables queries like best session and recent sessions for analytics.
- * Serializable to enable persistence via FileManager.
+ * Repository for typing session statistics.
  */
 public class StatsManager implements Serializable {
     private static final long serialVersionUID = 2L;
@@ -32,17 +27,19 @@ public class StatsManager implements Serializable {
     }
 
     public void addRecord(StatsRecord record) {
+        // Keep the full session so it can appear in history and analytics later.
         history.add(record);
 
-        // Update running totals for lifetime statistics by extracting metrics from the
-        // new session
-        // Uses BigInteger to support users with extremely high keystroke counts without
-        // overflow
+        // Update total keystrokes.
         totalKeystrokes = totalKeystrokes.add(BigInteger.valueOf(record.getTotalKeystrokes()));
+        // Update total characters typed.
         totalCharactersTyped = totalCharactersTyped.add(BigInteger.valueOf(record.getTypedText().length()));
+        // Increase total session count.
         totalSessions = totalSessions.add(BigInteger.ONE);
 
+        // Estimate words using the typing-test convention of 5 characters per word.
         long wordsInRecord = (long) Math.ceil(record.getTypedText().length() / 5.0);
+        // Update total words estimate.
         totalWords = totalWords.add(BigInteger.valueOf(wordsInRecord));
     }
 
@@ -66,27 +63,32 @@ public class StatsManager implements Serializable {
         return totalCharactersTyped;
     }
 
-    // Find the session with highest WPM among all recorded sessions
-    // Returns null if history is empty; useful for displaying peak performance
+    // Find the session with the highest WPM.
     public StatsRecord getBestSession() {
+        // If there is no history, there cannot be a best session yet.
         if (history.isEmpty())
             return null;
+        // Start with the first session and replace it whenever a faster one appears.
         StatsRecord best = history.get(0);
         for (StatsRecord r : history) {
             if (r.getWpm() > best.getWpm()) {
                 best = r;
             }
         }
+        // Return the fastest session found.
         return best;
     }
 
-    // Retrieve the last n sessions in chronological order for trend analysis
-    // Used by AnalyticsEngine to detect speed or accuracy improvements/declines
+    // Retrieve the last n recorded sessions.
     public List<StatsRecord> getRecentSessions(int n) {
+        // Return an empty list instead of null so callers can loop safely.
         if (history.isEmpty())
             return new ArrayList<>();
+        // Do not request more sessions than the history actually contains.
         int count = Math.min(n, history.size());
+        // Calculate where the recent slice begins.
         int start = history.size() - count;
+        // Return a copy so outside code cannot accidentally edit the original history list.
         return new ArrayList<>(history.subList(start, history.size()));
     }
 }
