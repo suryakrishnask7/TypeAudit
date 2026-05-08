@@ -11,6 +11,16 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
 
+/**
+ * UI panel for conducting typing tests and real-time performance display.
+ * Manages test lifecycle: initialization → active typing → completion.
+ * Displays live metrics (WPM, accuracy, time) that update every 500ms during
+ * typing.
+ * Automatically ends test when user types the complete text correctly (last
+ * word match).
+ * Creates StatsRecord upon completion and notifies parent components via
+ * callback (onStatsChanged).
+ */
 public class TypingPanel extends JPanel {
     private final JTextArea txtExpected;
     private final JTextArea txtInput;
@@ -48,9 +58,20 @@ public class TypingPanel extends JPanel {
         txtExpected.setText(TextProvider.getRandomText());
 
         txtInput.getDocument().addDocumentListener(new DocumentListener() {
-            @Override public void insertUpdate(DocumentEvent e) { handleTyping(); }
-            @Override public void removeUpdate(DocumentEvent e) { handleTyping(); }
-            @Override public void changedUpdate(DocumentEvent e) { handleTyping(); }
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                handleTyping();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                handleTyping();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                handleTyping();
+            }
         });
         txtInput.getInputMap().put(KeyStroke.getKeyStroke("ENTER"), "finishTest");
         txtInput.getActionMap().put("finishTest", new AbstractAction() {
@@ -84,6 +105,10 @@ public class TypingPanel extends JPanel {
         add(text, BorderLayout.CENTER);
     }
 
+    // Begin typing test: load random text, start engine timer, enable input, and
+    // trigger metric updates
+    // Disables Start button to prevent multiple concurrent tests; sets panel into
+    // active typing state
     private void startTest() {
         txtExpected.setText(TextProvider.getRandomText());
         txtInput.setText("");
@@ -99,6 +124,9 @@ public class TypingPanel extends JPanel {
         FileManager.logActivity("Typing test started.");
     }
 
+    // Process real-time typing input while test is running
+    // Updates live metrics and automatically ends test when user completes the text
+    // (last word correct)
     private void handleTyping() {
         if (!running) {
             return;
@@ -110,6 +138,12 @@ public class TypingPanel extends JPanel {
         }
     }
 
+    // End test: compute final metrics, save session record, persist to disk, and
+    // refresh stats panel
+    // Disables timer, records timestamps, calculates WPM/accuracy/errors, creates
+    // StatsRecord, persists via FileManager
+    // Triggers onStatsChanged callback to notify StatsPanel of new test result for
+    // display refresh
     private void finishTest() {
         engine.stop();
         timer.stop();
@@ -120,6 +154,9 @@ public class TypingPanel extends JPanel {
         txtInput.setEditable(false);
         btnStart.setEnabled(true);
 
+        // Calculate test metrics based on typed text vs. expected text
+        // WPM uses typed text length; final accuracy uses expected text length for true
+        // assessment
         double wpm = engine.calculateWPM(typed);
         double accuracy = engine.calculateFinalAccuracy(expected, typed);
         int errors = engine.getIncorrectCharactersCount(expected, typed);
@@ -130,6 +167,9 @@ public class TypingPanel extends JPanel {
         lblTime.setText(String.format("Time: %ds", durationSec));
         lblStatus.setText(String.format("Done. Errors: %d", errors));
 
+        // Create and store new session record with all computed metrics
+        // UUID sessionId generated automatically; timestamp captured at completion;
+        // duration in seconds
         StatsRecord record = new StatsRecord(
                 typed,
                 expected,
@@ -138,23 +178,24 @@ public class TypingPanel extends JPanel {
                 System.currentTimeMillis(),
                 durationSec,
                 errors,
-                typed.length()
-        );
+                typed.length());
 
         statsManager.addRecord(record);
         FileManager.saveStatsManager(statsManager);
-        onStatsChanged.run();
+        onStatsChanged.run(); // Notify parent components (StatsPanel) to refresh statistics display
         FileManager.logActivity("Typing test completed. WPM: " + wpm + ", Accuracy: " + accuracy);
     }
 
+    // Update performance metrics display every 500ms during active typing
+    // Called by Timer; displays elapsed time, current WPM, and live accuracy as
+    // user types
     private void updateLiveMetrics() {
         String typed = txtInput.getText();
         lblTime.setText(String.format("Time: %.0fs", engine.getTimeTakenSeconds()));
         lblWpm.setText(String.format("WPM: %.2f", engine.calculateWPM(typed)));
         lblAccuracy.setText(String.format(
                 "Accuracy: %.2f%%",
-                engine.calculateLiveAccuracy(txtExpected.getText(), typed)
-        ));
+                engine.calculateLiveAccuracy(txtExpected.getText(), typed)));
     }
 
     private JTextArea createTextArea(boolean editable) {

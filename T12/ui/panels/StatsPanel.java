@@ -10,6 +10,17 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
+/**
+ * UI panel displaying aggregated typing test statistics and analytics.
+ * Shows aggregate metrics (total sessions, best WPM, averages, trends) in upper
+ * section.
+ * Lists recent sessions (last 3) with timestamps, WPM, and accuracy in
+ * scrollable list below.
+ * Updates dynamically when TypingPanel completes a test via refreshData()
+ * callback.
+ * Uses AnalyticsEngine to compute trends indicating user improvement or
+ * decline.
+ */
 public class StatsPanel extends JPanel {
     private final StatsManager statsManager;
     private final AnalyticsEngine analyticsEngine;
@@ -59,7 +70,13 @@ public class StatsPanel extends JPanel {
         add(recentScroll, BorderLayout.EAST);
     }
 
+    // Refresh all statistics displays by querying StatsManager and AnalyticsEngine
+    // Updates aggregate stats (sessions, best WPM, averages, trend, lifetime chars)
+    // Populates recent sessions list (last 3 sessions) with formatted timestamps
+    // and metrics
+    // Called after each completed typing test to reflect new data
     public void refreshData() {
+        // Update aggregate stats by querying current totals and analytics
         lblTotalSessions.setText("Sessions: " + statsManager.getTotalSessions());
         StatsRecord best = statsManager.getBestSession();
         lblBestWpm.setText(String.format("Best WPM: %.2f", best == null ? 0.0 : best.getWpm()));
@@ -68,6 +85,9 @@ public class StatsPanel extends JPanel {
         lblTrend.setText("Trend: " + analyticsEngine.getSpeedTrend());
         lblLifetime.setText("Chars Typed: " + statsManager.getTotalCharactersTyped());
 
+        // Populate recent sessions list with last 3 sessions in reverse chronological
+        // order
+        // Each entry shows formatted timestamp, WPM, and accuracy percentage
         recentModel.clear();
         SimpleDateFormat sdf = new SimpleDateFormat("MM-dd HH:mm");
         List<StatsRecord> recent = statsManager.getRecentSessions(3);
@@ -77,9 +97,9 @@ public class StatsPanel extends JPanel {
                     "%s  %.1f WPM  %.1f%%",
                     sdf.format(new Date(record.getTimestamp())),
                     record.getWpm(),
-                    record.getAccuracy()
-            ));
+                    record.getAccuracy()));
         }
+        // Show placeholder message if no sessions have been completed yet
         if (recentModel.isEmpty()) {
             recentModel.addElement("No sessions yet");
         }
