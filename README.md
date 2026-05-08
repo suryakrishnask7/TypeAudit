@@ -43,7 +43,7 @@ TypeAudit is a Java Swing application for practicing and tracking typing speed a
 
 From the project root directory:
 ```powershell
-javac T12/MainApp.java T12/core/TypingEngine.java T12/stats/*.java T12/ui/*.java T12/ui/panels/*.java T12/util/*.java
+javac T12/MainApp.java
 ```
 
 Or use your IDE to compile the entire T12 package.
@@ -131,13 +131,3 @@ All Java classes include:
 - Analyzes last 5 sessions to determine speed trend
 - Returns: "Improving (+X WPM)", "Declining (-X WPM)", or "Stable"
 - Requires minimum 2 sessions for meaningful trends
-
-## Future Enhancements
-
-Potential improvements for future versions:
-- Multiple difficulty levels or passage categories
-- Leaderboard or ranking system
-- Export statistics to CSV/PDF
-- Customizable test duration or passage length
-- Visual charts for performance tracking
-- Network multiplayer typing races
